@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bybit Trading Analysis Bot</title><!-- CSS -->
+<link rel="stylesheet" href="style.css">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body><!-- HEADER -->
+<header>
+    <h1>📈 Bybit Trading Analysis Bot</h1>
+    <p>Spot & Futures Signal Dashboard</p>
+</header>
+
+<!-- TOP STATS -->
+<section class="stats-container">
+
+    <div class="card">
+        <h3>Virtual Balance</h3>
+        <h2 id="balance">$10,000</h2>
+    </div>
+
+    <div class="card">
+        <h3>Total Trades</h3>
+        <h2 id="totalTrades">0</h2>
+    </div>
+
+    <div class="card">
+        <h3>Win Rate</h3>
+        <h2 id="winRate">0%</h2>
+    </div>
+
+    <div class="card">
+        <h3>Open Signals</h3>
+        <h2 id="openSignals">0</h2>
+    </div>
+
+</section>
+
+<!-- MARKET SCANNER -->
+<section class="scanner">
+
+    <h2>Market Scanner</h2>
+
+    <div class="controls">
+        <select id="marketType">
+            <option value="spot">Spot Market</option>
+            <option value="futures">Futures Market</option>
+        </select>
+
+        <button id="scanBtn">
+            Scan Market
+        </button>
+    </div>
+
+</section>
+
+<!-- SIGNALS -->
+<section class="signals">
+
+    <h2>Generated Signals</h2>
+
+    <div id="signalContainer">
+
+        <!-- Example Signal -->
+
+        <div class="signal-card">
+            <h3>BTCUSDT</h3>
+
+            <p><strong>Direction:</strong> LONG</p>
+
+            <p><strong>Entry:</strong> 105000</p>
+
+            <p><strong>Take Profit:</strong> 108000</p>
+
+            <p><strong>Stop Loss:</strong> 103500</p>
+
+            <p><strong>Confidence:</strong> 82%</p>
+
+            <span class="status open">
+                OPEN
+            </span>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- PERFORMANCE CHART -->
+<section class="chart-section">
+
+    <h2>Paper Trading Performance</h2>
+
+    <canvas id="equityChart"></canvas>
+
+</section>
+
+<!-- TRADE HISTORY -->
+<section class="history">
+
+    <h2>Signal History</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Coin</th>
+                <th>Market</th>
+                <th>Signal</th>
+                <th>Entry</th>
+                <th>TP</th>
+                <th>SL</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody id="historyTable">
+
+        </tbody>
+
+    </table>
+
+</section>
+
+<!-- ANALYSIS PANEL -->
+<section class="analysis-panel">
+
+    <h2>Technical Analysis</h2>
+
+    <div class="analysis-box">
+
+        <p>RSI: <span id="rsi">--</span></p>
+
+        <p>MACD: <span id="macd">--</span></p>
+
+        <p>EMA Trend: <span id="emaTrend">--</span></p>
+
+        <p>Volume: <span id="volume">--</span></p>
+
+        <p>Funding Rate: <span id="fundingRate">--</span></p>
+
+        <p>Open Interest: <span id="openInterest">--</span></p>
+
+    </div>
+
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>
+        Bybit AI Analysis Bot © 2026
+    </p>
+</footer>
+
+<!-- JavaScript Files -->
+
+<script src="storage.js"></script>
+<script src="bybit.js"></script>
+<script src="analysis.js"></script>
+<script src="papertrade.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
