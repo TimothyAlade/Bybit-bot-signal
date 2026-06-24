@@ -1,379 +1,528 @@
 // papertrade.js
-// Virtual paper trading engine
+// Production Paper Trading Engine
 
 const PaperTrader = {
 
-START_BALANCE: 10000,
-RISK_PERCENT: 2,
+    START_BALANCE: 10000,
 
-balance: 10000,
-trades: [],
+    MAX_OPEN_TRADES: 5,
 
-// ======================
-// Initialize account
-// ======================
-init() {
+    RISK_PERCENT: 2,
 
-    const savedBalance =
-        localStorage.getItem("paper_balance");
+    balance: 10000,
 
-    const savedTrades =
-        localStorage.getItem("paper_trades");
+    trades: [],
 
-    this.balance = savedBalance
-        ? Number(savedBalance)
-        : this.START_BALANCE;
+    // ==========================
+    // Init
+    // ==========================
 
-    this.trades = savedTrades
-        ? JSON.parse(savedTrades)
-        : [];
+    init() {
 
-    this.updateDashboard();
-},
+        this.balance =
+            StorageManager.loadBalance();
 
-// ======================
-// Save to Local Storage
-// ======================
-save() {
+        this.trades =
+            StorageManager.loadTrades();
 
-    localStorage.setItem(
-        "paper_balance",
-        this.balance
-    );
+        this.updateDashboard();
 
-    localStorage.setItem(
-        "paper_trades",
-        JSON.stringify(this.trades)
-    );
-},
+        console.log(
+            "Paper Trader Ready"
+        );
+    },
 
-// ======================
-// Open trade
-// ======================
-openTrade(data) {
+    // ==========================
+    // Save
+    // ==========================
 
-    const trade = {
+    save() {
 
-        id: Date.now(),
-
-        coin: data.coin,
-
-        market: data.market,
-
-        direction: data.signal,
-
-        entry: data.entry,
-
-        takeProfit: data.takeProfit,
-
-        stopLoss: data.stopLoss,
-
-        confidence: data.confidence,
-
-        status: "OPEN",
-
-        openTime: new Date().toLocaleString(),
-
-        closeTime: null,
-
-        profit: 0
-    };
-
-    this.trades.push(trade);
-
-    this.save();
-
-    this.updateDashboard();
-
-    return trade;
-},
-
-// ======================
-// Check open trades
-// ======================
-async monitorTrades() {
-
-    const openTrades =
-        this.trades.filter(
-            trade => trade.status === "OPEN"
+        StorageManager.saveBalance(
+            this.balance
         );
 
-    for (const trade of openTrades) {
+        StorageManager.saveTrades(
+            this.trades
+        );
+    },
 
-        try {
+    // ==========================
+    // Open Trades Count
+    // ==========================
 
-            const market =
-                trade.market === "spot"
-                ? "spot"
-                : "linear";
+    getOpenTrades() {
 
-            const candles =
-                await BybitAPI.getCandles(
-                    trade.coin,
-                    market,
-                    "1",
-                    2
+        return this.trades.filter(
+            trade =>
+                trade.status === "OPEN"
+        );
+    },
+
+    // ==========================
+    // Open Trade
+    // ==========================
+
+    openTrade(signal) {
+
+        if (!signal)
+            return false;
+
+        if (
+            signal.confidence < 70
+        ) {
+            return false;
+        }
+
+        const openTrades =
+            this.getOpenTrades();
+
+        if (
+            openTrades.length >=
+            this.MAX_OPEN_TRADES
+        ) {
+
+            console.log(
+                "Max trades reached"
+            );
+
+            return false;
+        }
+
+        const duplicate =
+            openTrades.find(
+                trade =>
+                    trade.coin ===
+                    signal.coin
+            );
+
+        if (duplicate) {
+
+            console.log(
+                "Trade already exists:",
+                signal.coin
+            );
+
+            return false;
+        }
+
+        const riskAmount =
+            this.balance *
+            (
+                this.RISK_PERCENT /
+                100
+            );
+
+        const trade = {
+
+            id:
+                crypto.randomUUID(),
+
+            coin:
+                signal.coin,
+
+            market:
+                signal.market,
+
+            direction:
+                signal.signal,
+
+            confidence:
+                signal.confidence,
+
+            entry:
+                signal.entry,
+
+            stopLoss:
+                signal.stopLoss,
+
+            takeProfit:
+                signal.takeProfit,
+
+            riskAmount,
+
+            status: "OPEN",
+
+            profit: 0,
+
+            openTime:
+                Date.now(),
+
+            closeTime: null
+        };
+
+        this.trades.push(
+            trade
+        );
+
+        this.save();
+
+        this.updateDashboard();
+
+        console.log(
+            "Opened:",
+            trade.coin
+        );
+
+        return true;
+    },
+
+    // ==========================
+    // Monitor Trades
+    // ==========================
+
+    async monitorTrades() {
+
+        const openTrades =
+            this.getOpenTrades();
+
+        for (
+            const trade
+            of openTrades
+        ) {
+
+            try {
+
+                const candles =
+                    await BybitAPI
+                    .getCandles(
+                        trade.coin,
+                        trade.market === "spot"
+                            ? "spot"
+                            : "linear",
+                        "1",
+                        2
+                    );
+
+                if (
+                    !candles.length
+                ) {
+                    continue;
+                }
+
+                const price =
+                    Number(
+                        candles.at(-1)[4]
+                    );
+
+                this.evaluateTrade(
+                    trade,
+                    price
                 );
 
-            if (!candles.length) continue;
+            } catch (error) {
 
-            const currentPrice =
-                Number(candles[candles.length - 1][4]);
+                console.error(
+                    trade.coin,
+                    error
+                );
+            }
+        }
+    },
 
-            this.evaluateTrade(
+    // ==========================
+    // Evaluate
+    // ==========================
+
+    evaluateTrade(
+        trade,
+        currentPrice
+    ) {
+
+        if (
+            trade.status !== "OPEN"
+        ) {
+            return;
+        }
+
+        const isLong =
+            trade.direction === "BUY";
+
+        // BUY WIN
+
+        if (
+            isLong &&
+            currentPrice >=
+            trade.takeProfit
+        ) {
+
+            this.closeTrade(
                 trade,
-                currentPrice
+                "WIN"
             );
 
-        } catch (error) {
+            return;
+        }
 
-            console.error(
-                "Trade Monitor Error:",
-                error
+        // BUY LOSS
+
+        if (
+            isLong &&
+            currentPrice <=
+            trade.stopLoss
+        ) {
+
+            this.closeTrade(
+                trade,
+                "LOSS"
+            );
+
+            return;
+        }
+
+        // SELL WIN
+
+        if (
+            !isLong &&
+            currentPrice <=
+            trade.takeProfit
+        ) {
+
+            this.closeTrade(
+                trade,
+                "WIN"
+            );
+
+            return;
+        }
+
+        // SELL LOSS
+
+        if (
+            !isLong &&
+            currentPrice >=
+            trade.stopLoss
+        ) {
+
+            this.closeTrade(
+                trade,
+                "LOSS"
             );
         }
-    }
-},
+    },
 
-// ======================
-// Determine win/loss
-// ======================
-evaluateTrade(trade, price) {
+    // ==========================
+    // Close Trade
+    // ==========================
 
-    if (trade.status !== "OPEN") return;
-
-    const longTrade =
-        trade.direction === "BUY" ||
-        trade.direction === "LONG";
-
-    // LONG WIN
-
-    if (longTrade &&
-        price >= trade.takeProfit) {
-
-        this.closeTrade(trade, "WIN");
-    }
-
-    // LONG LOSS
-
-    else if (
-        longTrade &&
-        price <= trade.stopLoss
+    closeTrade(
+        trade,
+        result
     ) {
 
-        this.closeTrade(trade, "LOSS");
-    }
+        trade.status =
+            result;
 
-    // SHORT WIN
+        trade.closeTime =
+            Date.now();
 
-    else if (
-        !longTrade &&
-        price <= trade.takeProfit
-    ) {
+        if (
+            result === "WIN"
+        ) {
 
-        this.closeTrade(trade, "WIN");
-    }
+            trade.profit =
+                trade.riskAmount * 2;
 
-    // SHORT LOSS
+            this.balance +=
+                trade.profit;
 
-    else if (
-        !longTrade &&
-        price >= trade.stopLoss
-    ) {
+        } else {
 
-        this.closeTrade(trade, "LOSS");
-    }
-},
+            trade.profit =
+                -trade.riskAmount;
 
-// ======================
-// Close trade
-// ======================
-closeTrade(trade, result) {
+            this.balance +=
+                trade.profit;
+        }
 
-    trade.status = result;
-    trade.closeTime =
-        new Date().toLocaleString();
-
-    const riskAmount =
-        this.balance *
-        (this.RISK_PERCENT / 100);
-
-    if (result === "WIN") {
-
-        trade.profit = riskAmount * 2;
-
-        this.balance += trade.profit;
-    }
-
-    else {
-
-        trade.profit = -riskAmount;
-
-        this.balance += trade.profit;
-    }
-
-    this.save();
-
-    this.updateDashboard();
-
-    console.log(
-        `${trade.coin} ${result}`
-    );
-},
-
-// ======================
-// Stats
-// ======================
-getStats() {
-
-    const total =
-        this.trades.length;
-
-    const wins =
-        this.trades.filter(
-            t => t.status === "WIN"
-        ).length;
-
-    const losses =
-        this.trades.filter(
-            t => t.status === "LOSS"
-        ).length;
-
-    const open =
-        this.trades.filter(
-            t => t.status === "OPEN"
-        ).length;
-
-    const winRate =
-        total > 0
-        ? ((wins / total) * 100).toFixed(1)
-        : 0;
-
-    return {
-        total,
-        wins,
-        losses,
-        open,
-        winRate
-    };
-},
-
-// ======================
-// Update dashboard
-// ======================
-updateDashboard() {
-
-    const stats =
-        this.getStats();
-
-    const balanceEl =
-        document.getElementById("balance");
-
-    const tradesEl =
-        document.getElementById("totalTrades");
-
-    const winRateEl =
-        document.getElementById("winRate");
-
-    const openEl =
-        document.getElementById("openSignals");
-
-    if (balanceEl)
-        balanceEl.textContent =
-            "$" +
-            this.balance.toFixed(2);
-
-    if (tradesEl)
-        tradesEl.textContent =
-            stats.total;
-
-    if (winRateEl)
-        winRateEl.textContent =
-            stats.winRate + "%";
-
-    if (openEl)
-        openEl.textContent =
-            stats.open;
-
-    this.renderHistory();
-},
-
-// ======================
-// History table
-// ======================
-renderHistory() {
-
-    const table =
-        document.getElementById(
-            "historyTable"
+        StorageManager.addEquityPoint(
+            this.balance
         );
 
-    if (!table) return;
+        this.save();
 
-    table.innerHTML = "";
+        this.updateDashboard();
 
-    this.trades
-        .slice()
-        .reverse()
-        .forEach(trade => {
+        console.log(
+            `${trade.coin} ${result}`
+        );
+    },
 
-            table.innerHTML += `
+    // ==========================
+    // Statistics
+    // ==========================
+
+    getStats() {
+
+        const total =
+            this.trades.length;
+
+        const wins =
+            this.trades.filter(
+                t =>
+                    t.status === "WIN"
+            ).length;
+
+        const losses =
+            this.trades.filter(
+                t =>
+                    t.status === "LOSS"
+            ).length;
+
+        const open =
+            this.trades.filter(
+                t =>
+                    t.status === "OPEN"
+            ).length;
+
+        const winRate =
+            total > 0
+                ? (
+                    (wins / total) *
+                    100
+                  ).toFixed(1)
+                : 0;
+
+        return {
+
+            total,
+
+            wins,
+
+            losses,
+
+            open,
+
+            winRate
+        };
+    },
+
+    // ==========================
+    // Dashboard
+    // ==========================
+
+    updateDashboard() {
+
+        const stats =
+            this.getStats();
+
+        const balanceEl =
+            document.getElementById(
+                "balance"
+            );
+
+        const tradesEl =
+            document.getElementById(
+                "totalTrades"
+            );
+
+        const winRateEl =
+            document.getElementById(
+                "winRate"
+            );
+
+        const openEl =
+            document.getElementById(
+                "openSignals"
+            );
+
+        if (balanceEl) {
+
+            balanceEl.textContent =
+                "$" +
+                this.balance
+                .toFixed(2);
+        }
+
+        if (tradesEl) {
+
+            tradesEl.textContent =
+                stats.total;
+        }
+
+        if (winRateEl) {
+
+            winRateEl.textContent =
+                stats.winRate +
+                "%";
+        }
+
+        if (openEl) {
+
+            openEl.textContent =
+                stats.open;
+        }
+
+        this.renderHistory();
+    },
+
+    // ==========================
+    // History
+    // ==========================
+
+    renderHistory() {
+
+        const table =
+            document.getElementById(
+                "historyTable"
+            );
+
+        if (!table)
+            return;
+
+        table.innerHTML = "";
+
+        [...this.trades]
+            .reverse()
+            .forEach(
+                trade => {
+
+                table.innerHTML += `
                 <tr>
-                    <td>${trade.openTime}</td>
+                    <td>${new Date(trade.openTime).toLocaleString()}</td>
                     <td>${trade.coin}</td>
                     <td>${trade.market}</td>
                     <td>${trade.direction}</td>
                     <td>${trade.entry}</td>
                     <td>${trade.takeProfit}</td>
                     <td>${trade.stopLoss}</td>
-                    <td class="${trade.status.toLowerCase()}">
-                        ${trade.status}
-                    </td>
+                    <td>${trade.status}</td>
                 </tr>
-            `;
-        });
-},
+                `;
+            });
+    },
 
-// ======================
-// Reset account
-// ======================
-reset() {
+    // ==========================
+    // Reset
+    // ==========================
 
-    this.balance =
-        this.START_BALANCE;
+    reset() {
 
-    this.trades = [];
+        this.balance =
+            this.START_BALANCE;
 
-    localStorage.removeItem(
-        "paper_balance"
-    );
+        this.trades = [];
 
-    localStorage.removeItem(
-        "paper_trades"
-    );
+        this.save();
 
-    this.updateDashboard();
-}
-
+        this.updateDashboard();
+    }
 };
 
-// ======================
-// Initialize
-// ======================
+window.PaperTrader =
+    PaperTrader;
 
 document.addEventListener(
-"DOMContentLoaded",
-() => {
+    "DOMContentLoaded",
+    () => {
 
-    PaperTrader.init();
+        PaperTrader.init();
 
-    // Monitor every minute
-
-    setInterval(() => {
-
-        PaperTrader.monitorTrades();
-
-    }, 60000);
-}
-
+        setInterval(
+            () =>
+                PaperTrader
+                .monitorTrades(),
+            60000
+        );
+    }
 );

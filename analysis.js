@@ -1,25 +1,24 @@
 // analysis.js
-// Advanced Technical Analysis Engine
+// High Confidence Trading Analysis Engine
 
 const AnalysisEngine = {
 
     // ==========================
-    // Extract Closing Prices
+    // Extract Prices
     // ==========================
+
     getCloses(candles) {
-        return candles.map(candle => Number(candle[4]));
+        return candles.map(c => Number(c[4]));
     },
 
-    // ==========================
-    // Extract Volumes
-    // ==========================
     getVolumes(candles) {
-        return candles.map(candle => Number(candle[5]));
+        return candles.map(c => Number(c[5]));
     },
 
     // ==========================
     // EMA
     // ==========================
+
     calculateEMA(prices, period) {
 
         if (prices.length < period) return [];
@@ -28,8 +27,9 @@ const AnalysisEngine = {
 
         let ema = [];
 
-        const sma =
-            prices.slice(0, period)
+        let sma =
+            prices
+            .slice(0, period)
             .reduce((a, b) => a + b, 0) / period;
 
         ema[period - 1] = sma;
@@ -47,6 +47,7 @@ const AnalysisEngine = {
     // ==========================
     // RSI
     // ==========================
+
     calculateRSI(prices, period = 14) {
 
         if (prices.length < period + 1)
@@ -55,48 +56,67 @@ const AnalysisEngine = {
         let gains = 0;
         let losses = 0;
 
-        for (let i = prices.length - period; i < prices.length; i++) {
+        for (
+            let i = prices.length - period;
+            i < prices.length;
+            i++
+        ) {
 
             const diff =
-                prices[i] - prices[i - 1];
+                prices[i] -
+                prices[i - 1];
 
-            if (diff > 0)
+            if (diff > 0) {
                 gains += diff;
-            else
+            } else {
                 losses += Math.abs(diff);
+            }
         }
 
-        if (losses === 0)
+        const avgGain =
+            gains / period;
+
+        const avgLoss =
+            losses / period;
+
+        if (avgLoss === 0)
             return 100;
 
-        const rs = gains / losses;
+        const rs =
+            avgGain / avgLoss;
 
         return Number(
-            (100 - (100 / (1 + rs)))
-            .toFixed(2)
+            (
+                100 -
+                (100 / (1 + rs))
+            ).toFixed(2)
         );
     },
 
     // ==========================
-    // Average Volume
+    // Volume Strength
     // ==========================
-    averageVolume(volumes, period = 20) {
 
-        if (volumes.length < period)
-            return 0;
+    calculateVolumeStrength(volumes) {
 
-        const slice =
-            volumes.slice(-period);
+        if (volumes.length < 21)
+            return 1;
 
-        return (
-            slice.reduce((a, b) => a + b, 0)
-            / period
-        );
+        const currentVolume =
+            volumes[volumes.length - 1];
+
+        const averageVolume =
+            volumes
+            .slice(-21, -1)
+            .reduce((a, b) => a + b, 0) / 20;
+
+        return currentVolume / averageVolume;
     },
 
     // ==========================
     // Trend
     // ==========================
+
     determineTrend(prices) {
 
         const ema20 =
@@ -108,39 +128,51 @@ const AnalysisEngine = {
         const ema200 =
             this.calculateEMA(prices, 200).at(-1);
 
-        if (!ema20 || !ema50 || !ema200)
+        if (
+            !ema20 ||
+            !ema50 ||
+            !ema200
+        ) {
             return "UNKNOWN";
+        }
 
         if (
             ema20 > ema50 &&
             ema50 > ema200
         ) {
-            return "STRONG BULLISH";
+            return "BULLISH";
         }
 
         if (
             ema20 < ema50 &&
             ema50 < ema200
         ) {
-            return "STRONG BEARISH";
-        }
-
-        if (ema20 > ema50)
-            return "BULLISH";
-
-        if (ema20 < ema50)
             return "BEARISH";
+        }
 
         return "SIDEWAYS";
     },
 
     // ==========================
-    // Advanced Signal Generator
+    // Signal Generator
     // ==========================
-    generateSignal(prices, volumes = []) {
+
+    generateSignal(candles) {
+
+        const prices =
+            this.getCloses(candles);
+
+        const volumes =
+            this.getVolumes(candles);
+
+        if (prices.length < 200)
+            return null;
 
         const currentPrice =
             prices.at(-1);
+
+        const previousPrice =
+            prices.at(-2);
 
         const ema20 =
             this.calculateEMA(prices, 20).at(-1);
@@ -154,162 +186,138 @@ const AnalysisEngine = {
         const rsi =
             this.calculateRSI(prices);
 
-        let score = 0;
+        const trend =
+            this.determineTrend(prices);
+
+        const volumeStrength =
+            this.calculateVolumeStrength(volumes);
+
+        let buyScore = 0;
+        let sellScore = 0;
 
         const reasons = [];
 
-        // EMA Trend
+        // ==========================
+        // BUY SCORE
+        // ==========================
 
-        if (ema20 > ema50) {
-            score += 20;
-            reasons.push("EMA20 > EMA50");
+        if (trend === "BULLISH") {
+            buyScore += 30;
+            reasons.push("Bull Trend");
         }
 
-        if (ema50 > ema200) {
-            score += 20;
-            reasons.push("EMA50 > EMA200");
+        if (
+            currentPrice > ema20 &&
+            ema20 > ema50
+        ) {
+            buyScore += 20;
+            reasons.push("EMA Alignment");
         }
-
-        if (currentPrice > ema20) {
-            score += 15;
-            reasons.push("Price Above EMA20");
-        }
-
-        // RSI
 
         if (
             rsi >= 50 &&
-            rsi <= 70
+            rsi <= 65
         ) {
-            score += 20;
+            buyScore += 20;
             reasons.push("Healthy RSI");
         }
 
-        if (rsi < 30) {
-            score += 15;
-            reasons.push("Oversold");
+        if (
+            volumeStrength >= 1.5
+        ) {
+            buyScore += 20;
+            reasons.push("Volume Spike");
         }
-
-        if (rsi > 75) {
-            score -= 15;
-            reasons.push("Overbought");
-        }
-
-        // Volume Confirmation
-
-        if (volumes.length > 20) {
-
-            const avgVol =
-                this.averageVolume(
-                    volumes,
-                    20
-                );
-
-            const currentVol =
-                volumes.at(-1);
-
-            if (
-                currentVol >
-                avgVol * 1.4
-            ) {
-
-                score += 25;
-
-                reasons.push(
-                    "Volume Spike"
-                );
-            }
-        }
-
-        let signal = "HOLD";
-
-        if (score >= 80) {
-            signal = "STRONG BUY";
-        }
-
-        else if (score >= 60) {
-            signal = "BUY";
-        }
-
-        else if (score <= 20) {
-            signal = "SELL";
-        }
-
-        let stopLoss;
-        let takeProfit;
-        let riskReward;
 
         if (
-            signal === "BUY" ||
-            signal === "STRONG BUY"
+            currentPrice >
+            previousPrice
+        ) {
+            buyScore += 10;
+            reasons.push("Momentum");
+        }
+
+        // ==========================
+        // SELL SCORE
+        // ==========================
+
+        if (trend === "BEARISH") {
+            sellScore += 30;
+        }
+
+        if (
+            currentPrice < ema20 &&
+            ema20 < ema50
+        ) {
+            sellScore += 20;
+        }
+
+        if (
+            rsi >= 35 &&
+            rsi <= 50
+        ) {
+            sellScore += 20;
+        }
+
+        if (
+            volumeStrength >= 1.5
+        ) {
+            sellScore += 20;
+        }
+
+        if (
+            currentPrice <
+            previousPrice
+        ) {
+            sellScore += 10;
+        }
+
+        let signal = null;
+        let confidence = 0;
+
+        if (
+            buyScore >= 70 &&
+            buyScore > sellScore
         ) {
 
-            stopLoss =
-                currentPrice * 0.985;
+            signal = "BUY";
+            confidence = buyScore;
 
-            takeProfit =
-                currentPrice * 1.03;
+        } else if (
+            sellScore >= 70 &&
+            sellScore > buyScore
+        ) {
 
-            riskReward =
-                (
-                    (takeProfit - currentPrice)
-                    /
-                    (currentPrice - stopLoss)
-                ).toFixed(2);
+            signal = "SELL";
+            confidence = sellScore;
         }
 
-        else {
+        // Hard Filter
 
-            stopLoss =
-                currentPrice * 1.015;
+        if (!signal)
+            return null;
 
-            takeProfit =
-                currentPrice * 0.97;
+        const stopLoss =
+            signal === "BUY"
+                ? currentPrice * 0.98
+                : currentPrice * 1.02;
 
-            riskReward =
-                (
-                    (currentPrice - takeProfit)
-                    /
-                    (stopLoss - currentPrice)
-                ).toFixed(2);
-        }
+        const takeProfit =
+            signal === "BUY"
+                ? currentPrice * 1.05
+                : currentPrice * 0.95;
 
         return {
 
             signal,
 
-            confidence:
-                Math.min(score, 100),
+            confidence,
 
-            score,
-
-            reasons,
-
-            trend:
-                this.determineTrend(
-                    prices
-                ),
+            trend,
 
             currentPrice:
                 Number(
                     currentPrice.toFixed(4)
-                ),
-
-            rsi,
-
-            ema20:
-                Number(
-                    ema20?.toFixed(4)
-                ),
-
-            ema50:
-                Number(
-                    ema50?.toFixed(4)
-                ),
-
-            ema200:
-                Number(
-                    ema200?.toFixed(4)
                 ),
 
             entry:
@@ -317,25 +325,41 @@ const AnalysisEngine = {
                     currentPrice.toFixed(4)
                 ),
 
-            stopLoss:
-                Number(
-                    stopLoss.toFixed(4)
-                ),
-
             takeProfit:
                 Number(
                     takeProfit.toFixed(4)
                 ),
 
-            riskReward:
-                Number(riskReward)
+            stopLoss:
+                Number(
+                    stopLoss.toFixed(4)
+                ),
 
+            ema20:
+                Number(
+                    ema20.toFixed(4)
+                ),
+
+            ema50:
+                Number(
+                    ema50.toFixed(4)
+                ),
+
+            ema200:
+                Number(
+                    ema200.toFixed(4)
+                ),
+
+            rsi,
+
+            volumeStrength:
+                Number(
+                    volumeStrength.toFixed(2)
+                ),
+
+            reasons
         };
     }
-
 };
 
-// Example:
-// const closes = AnalysisEngine.getCloses(candles);
-// const volumes = AnalysisEngine.getVolumes(candles);
-// const signal = AnalysisEngine.generateSignal(closes, volumes);
+window.AnalysisEngine = AnalysisEngine;
