@@ -3,13 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bybit Trading Analysis Bot</title>
+    <title>Bybit Trading Analysis Bot - Professional Edition</title>
     
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+            padding: 25px;
+            text-align: center;
+            border-bottom: 2px solid #4CAF50;
+        }
+
+        header h1 {
+            font-size: 2em;
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #1a1a3e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #2a2a5a;
+            text-align: center;
+        }
+
+        .card h3 {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card h2 {
+            font-size: 1.8em;
+            color: #4CAF50;
+        }
+
+        .scanner, .signals, .chart-section, .history, .analysis-panel {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #111133;
+            border-radius: 10px;
+            border: 1px solid #2a2a5a;
+        }
+
+        .scanner h2, .signals h2, .chart-section h2, .history h2, .analysis-panel h2 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 12px 20px;
+            background: #1a1a3e;
+            color: #e0e0e0;
+            border: 1px solid #2a2a5a;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #resetBtn {
+            background: #ff3b3b;
+        }
+
+        #resetBtn:hover {
+            background: #e63939;
+        }
+
+        #signalContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .signal-card {
+            background: #1a1a3e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #3a3a5c;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .signal-card:hover {
+            border-color: #4CAF50;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .signal-card h3 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .signal-card p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .chart-section div {
+            background: #1a1a3e;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        th {
+            background: #16213e;
+            color: #888;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #2a2a5a;
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #1a1a3e;
+        }
+
+        tr:hover {
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .analysis-box {
+            background: #1a1a3e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .analysis-item {
+            text-align: center;
+            padding: 15px;
+            background: #111133;
+            border-radius: 8px;
+            border: 1px solid #2a2a5a;
+        }
+
+        .analysis-item strong {
+            display: block;
+            color: #888;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .analysis-item span {
+            font-size: 1.3em;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .conf-bracket {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a5a;
+        }
+
+        .conf-label {
+            color: #888;
+        }
+
+        .conf-rate {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-buy {
+            background: rgba(20, 184, 20, 0.2);
+            color: #14b814;
+        }
+
+        .status-sell {
+            background: rgba(255, 59, 59, 0.2);
+            color: #ff3b3b;
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            table {
+                font-size: 0.7em;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .error {
+            color: #ff3b3b;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
 
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 </head>
 <body>
@@ -17,12 +314,11 @@
     <!-- HEADER -->
     <header>
         <h1>📈 Bybit Trading Analysis Bot</h1>
-        <p>Spot & Futures Signal Dashboard</p>
+        <p>Professional Spot & Futures Signal Dashboard | Min Confidence: 70%</p>
     </header>
 
     <!-- TOP STATS -->
     <section class="stats-container">
-
         <div class="card">
             <h3>Virtual Balance</h3>
             <h2 id="balance">$10,000.00</h2>
@@ -42,151 +338,148 @@
             <h3>Open Signals</h3>
             <h2 id="openSignals">0</h2>
         </div>
+    </section>
 
+    <!-- CONFIDENCE ANALYSIS -->
+    <section class="stats-container" style="margin-top:0;">
+        <div class="card" style="grid-column: 1 / -1;">
+            <h3>📊 Confidence Level Performance</h3>
+            <div id="confidenceStats">
+                <div class="conf-bracket">
+                    <span class="conf-label">70-79% Confidence</span>
+                    <span class="conf-rate">0% Win Rate (0/0 trades)</span>
+                </div>
+                <div class="conf-bracket">
+                    <span class="conf-label">80-89% Confidence</span>
+                    <span class="conf-rate">0% Win Rate (0/0 trades)</span>
+                </div>
+                <div class="conf-bracket">
+                    <span class="conf-label">90-100% Confidence</span>
+                    <span class="conf-rate">0% Win Rate (0/0 trades)</span>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- MARKET SCANNER -->
     <section class="scanner">
-
-        <h2>Market Scanner</h2>
-
+        <h2>🔍 Market Scanner</h2>
         <div class="controls">
             <select id="marketType">
-                <option value="futures">Futures Market</option>
+                <option value="futures">Futures Market (Recommended)</option>
                 <option value="spot">Spot Market</option>
             </select>
 
-            <button id="scanBtn">
-                🔍 Scan Market
-            </button>
-            
-            <button id="resetBtn" style="background:#ff3b3b; margin-left:10px;">
-                🔄 Reset Account
-            </button>
+            <button id="scanBtn">🔍 Scan Market</button>
+            <button id="resetBtn">🔄 Reset Account</button>
         </div>
-
     </section>
 
     <!-- SIGNALS -->
     <section class="signals">
-
-        <h2>Generated Signals</h2>
-
+        <h2>🎯 Generated Signals (70%+ Confidence Only)</h2>
         <div id="signalContainer">
-
             <div class="signal-card" style="text-align:center;">
-                <h3>📊 Waiting for Scan</h3>
-                <p>Click "Scan Market" to generate trading signals</p>
+                <h3>📊 Waiting for Market Scan</h3>
+                <p>Click "Scan Market" to analyze top cryptocurrencies</p>
+                <p style="color:#888;font-size:0.8em;">Only high-confidence signals (70%+) will be shown</p>
             </div>
-
         </div>
-
     </section>
 
     <!-- PERFORMANCE CHART -->
     <section class="chart-section">
-
-        <h2>Paper Trading Performance</h2>
-
+        <h2>📈 Paper Trading Performance</h2>
         <div style="position: relative; height: 400px;">
             <canvas id="equityChart"></canvas>
         </div>
-
     </section>
 
     <!-- TRADE HISTORY -->
     <section class="history">
-
-        <h2>Trade History</h2>
-
+        <h2>📋 Trade History with Confidence Analysis</h2>
         <div style="overflow-x: auto;">
-            <table>
-                <thead>
+            <table id="historyTable">
+                <tbody>
                     <tr>
-                        <th>Date</th>
-                        <th>Coin</th>
-                        <th>Market</th>
-                        <th>Signal</th>
-                        <th>Entry</th>
-                        <th>TP</th>
-                        <th>SL</th>
-                        <th>Profit</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTable">
-                    <tr>
-                        <td colspan="9" style="text-align:center; padding:20px; color:#888;">
-                            No trades yet. Click "Scan Market" to start trading!
+                        <td colspan="11" style="text-align:center;padding:30px;color:#888;">
+                            <p style="font-size:1.2em;">📊 No Trade History Yet</p>
+                            <p>Click "Scan Market" to generate signals and start paper trading</p>
+                            <p style="font-size:0.8em;margin-top:10px;">Signals are filtered at 70%+ confidence with duplicate prevention</p>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-
     </section>
 
     <!-- ANALYSIS PANEL -->
     <section class="analysis-panel">
-
-        <h2>Technical Analysis</h2>
-
+        <h2>🔬 Technical Analysis (Click a Signal Card to View)</h2>
         <div class="analysis-box">
-
             <div class="analysis-grid">
                 <div class="analysis-item">
                     <p><strong>RSI</strong></p>
                     <p><span id="rsi">--</span></p>
                 </div>
-
                 <div class="analysis-item">
                     <p><strong>MACD Signal</strong></p>
                     <p><span id="macd">--</span></p>
                 </div>
-
                 <div class="analysis-item">
                     <p><strong>EMA Trend</strong></p>
                     <p><span id="emaTrend">--</span></p>
                 </div>
-
                 <div class="analysis-item">
                     <p><strong>Volume Strength</strong></p>
                     <p><span id="volume">--</span></p>
                 </div>
-
                 <div class="analysis-item">
                     <p><strong>Funding Rate</strong></p>
                     <p><span id="fundingRate">--</span></p>
                 </div>
-
                 <div class="analysis-item">
                     <p><strong>Open Interest</strong></p>
                     <p><span id="openInterest">--</span></p>
                 </div>
             </div>
-
         </div>
-
     </section>
 
     <!-- FOOTER -->
     <footer>
-        <p>Bybit AI Analysis Bot © 2026 | Paper Trading Only</p>
+        <p>🚀 Bybit AI Analysis Bot © 2026 | Paper Trading Only | No Real Money Risk</p>
+        <p style="font-size:0.8em;">Professional Edition v2.0 | Duplicate Prevention | Confidence Filtering | Trailing Stops</p>
     </footer>
 
-    <!-- Clear corrupted data on first load -->
+    <!-- Initialize Storage -->
     <script>
-        // Check if this is first visit
-        if (!localStorage.getItem("bot_initialized")) {
-            console.log("First run - initializing storage");
+        // Clear corrupted data on fresh install
+        if (!localStorage.getItem("bot_version")) {
+            console.log("🚀 First time setup - Initializing storage");
             localStorage.clear();
-            localStorage.setItem("bot_initialized", "true");
+            localStorage.setItem("bot_version", "2.0.0");
             localStorage.setItem("paper_balance", JSON.stringify(10000));
             localStorage.setItem("paper_trades", JSON.stringify([]));
+            localStorage.setItem("generated_signals_history", JSON.stringify([]));
             localStorage.setItem("equity_curve", JSON.stringify([{
                 balance: 10000,
                 timestamp: Date.now()
             }]));
+            localStorage.setItem("daily_stats", JSON.stringify({
+                date: new Date().toDateString(),
+                startBalance: 10000,
+                trades: 0,
+                losses: 0,
+                lossAmount: 0
+            }));
+        }
+        
+        // Check for old version and migrate
+        if (localStorage.getItem("bot_version") === "1.0.0") {
+            console.log("🔄 Migrating from v1.0.0 to v2.0.0");
+            localStorage.setItem("bot_version", "2.0.0");
+            localStorage.setItem("generated_signals_history", JSON.stringify([]));
         }
     </script>
 
@@ -197,15 +490,75 @@
     <script src="papertrade.js"></script>
     <script src="app.js"></script>
 
-    <!-- Add reset button functionality -->
+    <!-- App Initialization -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", async function() {
+            console.log("🚀 Starting Bybit Trading Bot v2.0");
+            
+            // Wait for all modules to load
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check dependencies
+            const modules = {
+                "StorageManager": window.StorageManager,
+                "BybitAPI": window.BybitAPI,
+                "AnalysisEngine": window.AnalysisEngine,
+                "PaperTrader": window.PaperTrader,
+                "Chart": window.Chart
+            };
+            
+            const missing = Object.entries(modules)
+                .filter(([name, loaded]) => !loaded)
+                .map(([name]) => name);
+            
+            if (missing.length > 0) {
+                console.error("❌ Missing modules:", missing);
+                document.body.innerHTML += `
+                    <div class="error" style="position:fixed;top:0;left:0;right:0;background:red;padding:15px;z-index:9999;">
+                        Failed to load: ${missing.join(", ")}. Please check your files.
+                    </div>
+                `;
+                return;
+            }
+            
+            console.log("✅ All modules loaded successfully");
+            
+            // Initialize app
+            if (window.App && App.init) {
+                await App.init();
+            }
+            
+            // Add reset button functionality
             const resetBtn = document.getElementById("resetBtn");
             if (resetBtn && window.PaperTrader) {
-                resetBtn.addEventListener("click", function() {
-                    PaperTrader.reset();
-                });
+                resetBtn.addEventListener("click", () => PaperTrader.reset());
             }
+            
+            // Auto-scan after 3 seconds
+            setTimeout(() => {
+                console.log("🔄 Running initial market scan...");
+                if (window.App && App.scanMarket) {
+                    App.scanMarket();
+                }
+            }, 3000);
+            
+            // Monitor trades every 30 seconds
+            setInterval(() => {
+                if (window.PaperTrader && PaperTrader.monitorTrades) {
+                    PaperTrader.monitorTrades();
+                }
+            }, 30000);
+            
+            // Auto-scan every 5 minutes
+            setInterval(() => {
+                console.log("🔄 Auto-scanning market...");
+                if (window.App && App.scanMarket) {
+                    App.scanMarket();
+                }
+            }, 300000);
+            
+            console.log("✅ Bot fully operational");
+            console.log("📊 Features: Confidence Filtering | Duplicate Prevention | Trailing Stops | Risk Management");
         });
     </script>
 
