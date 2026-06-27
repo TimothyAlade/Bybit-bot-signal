@@ -1,168 +1,213 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bybit Trading Analysis Bot</title><!-- CSS -->
-<link rel="stylesheet" href="style.css">
+    <title>Bybit Trading Analysis Bot</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </head>
-<body><!-- HEADER -->
-<header>
-    <h1>📈 Bybit Trading Analysis Bot</h1>
-    <p>Spot & Futures Signal Dashboard</p>
-</header>
+<body>
 
-<!-- TOP STATS -->
-<section class="stats-container">
+    <!-- HEADER -->
+    <header>
+        <h1>📈 Bybit Trading Analysis Bot</h1>
+        <p>Spot & Futures Signal Dashboard</p>
+    </header>
 
-    <div class="card">
-        <h3>Virtual Balance</h3>
-        <h2 id="balance">$10,000</h2>
-    </div>
+    <!-- TOP STATS -->
+    <section class="stats-container">
 
-    <div class="card">
-        <h3>Total Trades</h3>
-        <h2 id="totalTrades">0</h2>
-    </div>
-
-    <div class="card">
-        <h3>Win Rate</h3>
-        <h2 id="winRate">0%</h2>
-    </div>
-
-    <div class="card">
-        <h3>Open Signals</h3>
-        <h2 id="openSignals">0</h2>
-    </div>
-
-</section>
-
-<!-- MARKET SCANNER -->
-<section class="scanner">
-
-    <h2>Market Scanner</h2>
-
-    <div class="controls">
-        <select id="marketType">
-            <option value="spot">Spot Market</option>
-            <option value="futures">Futures Market</option>
-        </select>
-
-        <button id="scanBtn">
-            Scan Market
-        </button>
-    </div>
-
-</section>
-
-<!-- SIGNALS -->
-<section class="signals">
-
-    <h2>Generated Signals</h2>
-
-    <div id="signalContainer">
-
-        <!-- Example Signal -->
-
-        <div class="signal-card">
-            <h3>BTCUSDT</h3>
-
-            <p><strong>Direction:</strong> LONG</p>
-
-            <p><strong>Entry:</strong> 105000</p>
-
-            <p><strong>Take Profit:</strong> 108000</p>
-
-            <p><strong>Stop Loss:</strong> 103500</p>
-
-            <p><strong>Confidence:</strong> 82%</p>
-
-            <span class="status open">
-                OPEN
-            </span>
+        <div class="card">
+            <h3>Virtual Balance</h3>
+            <h2 id="balance">$10,000.00</h2>
         </div>
 
-    </div>
+        <div class="card">
+            <h3>Total Trades</h3>
+            <h2 id="totalTrades">0</h2>
+        </div>
 
-</section>
+        <div class="card">
+            <h3>Win Rate</h3>
+            <h2 id="winRate">0%</h2>
+        </div>
 
-<!-- PERFORMANCE CHART -->
-<section class="chart-section">
+        <div class="card">
+            <h3>Open Signals</h3>
+            <h2 id="openSignals">0</h2>
+        </div>
 
-    <h2>Paper Trading Performance</h2>
+    </section>
 
-    <canvas id="equityChart"></canvas>
+    <!-- MARKET SCANNER -->
+    <section class="scanner">
 
-</section>
+        <h2>Market Scanner</h2>
 
-<!-- TRADE HISTORY -->
-<section class="history">
+        <div class="controls">
+            <select id="marketType">
+                <option value="futures">Futures Market</option>
+                <option value="spot">Spot Market</option>
+            </select>
 
-    <h2>Signal History</h2>
+            <button id="scanBtn">
+                🔍 Scan Market
+            </button>
+            
+            <button id="resetBtn" style="background:#ff3b3b; margin-left:10px;">
+                🔄 Reset Account
+            </button>
+        </div>
 
-    <table>
+    </section>
 
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Coin</th>
-                <th>Market</th>
-                <th>Signal</th>
-                <th>Entry</th>
-                <th>TP</th>
-                <th>SL</th>
-                <th>Status</th>
-            </tr>
-        </thead>
+    <!-- SIGNALS -->
+    <section class="signals">
 
-        <tbody id="historyTable">
+        <h2>Generated Signals</h2>
 
-        </tbody>
+        <div id="signalContainer">
 
-    </table>
+            <div class="signal-card" style="text-align:center;">
+                <h3>📊 Waiting for Scan</h3>
+                <p>Click "Scan Market" to generate trading signals</p>
+            </div>
 
-</section>
+        </div>
 
-<!-- ANALYSIS PANEL -->
-<section class="analysis-panel">
+    </section>
 
-    <h2>Technical Analysis</h2>
+    <!-- PERFORMANCE CHART -->
+    <section class="chart-section">
 
-    <div class="analysis-box">
+        <h2>Paper Trading Performance</h2>
 
-        <p>RSI: <span id="rsi">--</span></p>
+        <div style="position: relative; height: 400px;">
+            <canvas id="equityChart"></canvas>
+        </div>
 
-        <p>MACD: <span id="macd">--</span></p>
+    </section>
 
-        <p>EMA Trend: <span id="emaTrend">--</span></p>
+    <!-- TRADE HISTORY -->
+    <section class="history">
 
-        <p>Volume: <span id="volume">--</span></p>
+        <h2>Trade History</h2>
 
-        <p>Funding Rate: <span id="fundingRate">--</span></p>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Coin</th>
+                        <th>Market</th>
+                        <th>Signal</th>
+                        <th>Entry</th>
+                        <th>TP</th>
+                        <th>SL</th>
+                        <th>Profit</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable">
+                    <tr>
+                        <td colspan="9" style="text-align:center; padding:20px; color:#888;">
+                            No trades yet. Click "Scan Market" to start trading!
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <p>Open Interest: <span id="openInterest">--</span></p>
+    </section>
 
-    </div>
+    <!-- ANALYSIS PANEL -->
+    <section class="analysis-panel">
 
-</section>
+        <h2>Technical Analysis</h2>
 
-<!-- FOOTER -->
-<footer>
-    <p>
-        Bybit AI Analysis Bot © 2026
-    </p>
-</footer>
+        <div class="analysis-box">
 
-<!-- JavaScript Files -->
+            <div class="analysis-grid">
+                <div class="analysis-item">
+                    <p><strong>RSI</strong></p>
+                    <p><span id="rsi">--</span></p>
+                </div>
 
-<script src="storage.js"></script>
-<script src="bybit.js"></script>
-<script src="analysis.js"></script>
-<script src="papertrade.js"></script>
-<script src="app.js"></script>
+                <div class="analysis-item">
+                    <p><strong>MACD Signal</strong></p>
+                    <p><span id="macd">--</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <p><strong>EMA Trend</strong></p>
+                    <p><span id="emaTrend">--</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <p><strong>Volume Strength</strong></p>
+                    <p><span id="volume">--</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <p><strong>Funding Rate</strong></p>
+                    <p><span id="fundingRate">--</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <p><strong>Open Interest</strong></p>
+                    <p><span id="openInterest">--</span></p>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Bybit AI Analysis Bot © 2026 | Paper Trading Only</p>
+    </footer>
+
+    <!-- Clear corrupted data on first load -->
+    <script>
+        // Check if this is first visit
+        if (!localStorage.getItem("bot_initialized")) {
+            console.log("First run - initializing storage");
+            localStorage.clear();
+            localStorage.setItem("bot_initialized", "true");
+            localStorage.setItem("paper_balance", JSON.stringify(10000));
+            localStorage.setItem("paper_trades", JSON.stringify([]));
+            localStorage.setItem("equity_curve", JSON.stringify([{
+                balance: 10000,
+                timestamp: Date.now()
+            }]));
+        }
+    </script>
+
+    <!-- JavaScript Files -->
+    <script src="storage.js"></script>
+    <script src="bybit.js"></script>
+    <script src="analysis.js"></script>
+    <script src="papertrade.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Add reset button functionality -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const resetBtn = document.getElementById("resetBtn");
+            if (resetBtn && window.PaperTrader) {
+                resetBtn.addEventListener("click", function() {
+                    PaperTrader.reset();
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>

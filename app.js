@@ -1,459 +1,157 @@
 // app.js
-// High Confidence Trading Scanner
-
 const App = {
-
-    scannedSignals: [],
     chart: null,
-    scanInterval: null,
 
-    async init() {
-
-        console.log("Trading Bot Started");
-
-        const container =
-            document.getElementById(
-                "signalContainer"
-            );
-
-        if (container) {
-            container.innerHTML = "";
-        }
-
-        this.initChart();
-
-        const scanBtn =
-            document.getElementById(
-                "scanBtn"
-            );
-
-        if (scanBtn) {
-
-            scanBtn.addEventListener(
-                "click",
-                () => this.scanMarket()
-            );
-        }
-
-        await this.scanMarket();
-
-        this.scanInterval =
-            setInterval(() => {
-
-                this.scanMarket();
-
-            }, 60000);
-
-        console.log(
-            "Auto Scan Active (60s)"
-        );
-    },
-
-    initChart() {
-
-        const canvas =
-            document.getElementById(
-                "equityChart"
-            );
-
-        if (!canvas) return;
-
-        const ctx =
-            canvas.getContext("2d");
-
-        this.chart =
-            new Chart(ctx, {
-
-                type: "line",
-
-                data: {
-
-                    labels: [],
-
-                    datasets: [
-                        {
-                            label:
-                                "Account Equity",
-
-                            data: [],
-
+    init() {
+        if (window.Chart) {
+            const canvas = document.getElementById("equityChart");
+            if (canvas) {
+                this.chart = new Chart(canvas.getContext("2d"), {
+                    type: "line",
+                    data: {
+                        labels: ["Start"],
+                        datasets: [{
+                            label: "Balance",
+                            data: [10000],
+                            borderColor: "#4CAF50",
+                            fill: true,
                             tension: 0.3
-                        }
-                    ]
-                },
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
 
-                options: {
-
-                    responsive: true,
-
-                    maintainAspectRatio:
-                        false
-                }
-            });
+        const scanBtn = document.getElementById("scanBtn");
+        if (scanBtn) {
+            scanBtn.onclick = () => this.scanMarket();
+        }
 
         this.updateChart();
+        console.log("App ready");
     },
 
     updateChart() {
-
         if (!this.chart) return;
+        
+        const saved = localStorage.getItem("equity_curve");
+        if (!saved) return;
 
-        const equity =
-            StorageManager.loadEquity();
-
-        const labels =
-            equity.map((_, i) =>
-                `${i + 1}`
-            );
-
-        const values =
-            equity.map(
-                item => item.balance
-            );
-
-        this.chart.data.labels =
-            labels;
-
-        this.chart.data.datasets[0].data =
-            values;
-
-        this.chart.update();
+        try {
+            const equity = JSON.parse(saved);
+            if (Array.isArray(equity) && equity.length > 0) {
+                this.chart.data.labels = equity.map((_, i) => i + 1);
+                this.chart.data.datasets[0].data = equity.map(p => p.balance);
+                this.chart.update();
+            }
+        } catch(e) {}
     },
 
     async scanMarket() {
+        console.log("=== SCANNING ===");
+
+        const scanBtn = document.getElementById("scanBtn");
+        if (scanBtn) {
+            scanBtn.disabled = true;
+            scanBtn.textContent = "Scanning...";
+        }
 
         try {
+            const marketType = "futures";
+            const coins = await BybitAPI.getTopCoins(marketType, 15);
 
-            const scanBtn =
-                document.getElementById(
-                    "scanBtn"
-                );
-
-            if (scanBtn) {
-
-                scanBtn.disabled = true;
-
-                scanBtn.textContent =
-                    "Scanning...";
-            }
-
-            const marketType =
-                document.getElementById(
-                    "marketType"
-                )?.value || "futures";
-
-            console.log(
-                `Scanning ${marketType}`
-            );
-
-            const topCoins =
-                await BybitAPI.getTopCoins(
-                    marketType,
-                    10
-                );
-
-            if (!topCoins.length) {
-
-                console.error(
-                    "No coins returned"
-                );
-
+            if (!coins || coins.length === 0) {
+                alert("No coins found. Check internet connection.");
                 return;
             }
 
-            let signals = [];
+            console.log("Got", coins.length, "coins");
 
-            for (const coin of topCoins) {
+            let tradeCount = 0;
 
+            for (const coin of coins) {
                 try {
-
-                    const category =
-                        marketType ===
-                        "spot"
-                            ? "spot"
-                            : "linear";
-
-                    const candles =
-                        await BybitAPI.getCandles(
-                            coin.symbol,
-                            category,
-                            "60",
-                            200
-                        );
-
-                    if (
-                        !candles ||
-                        candles.length < 200
-                    ) {
+                    const candles = await BybitAPI.getCandles(coin.symbol, "linear", "60", 200);
+                    
+                    if (!candles || candles.length < 200) {
+                        console.log(coin.symbol, "- not enough candles");
                         continue;
                     }
 
-                    const analysis =
-                        AnalysisEngine
-                            .generateSignal(
-                                candles
-                            );
-
+                    const analysis = AnalysisEngine.generateSignal(candles);
+                    
                     if (!analysis) {
+                        console.log(coin.symbol, "- no signal");
                         continue;
                     }
 
-                    signals.push({
+                    console.log(coin.symbol, "-", analysis.signal, analysis.confidence + "%");
 
-                        coin:
-                            coin.symbol,
-
-                        market:
-                            marketType,
-
+                    const signal = {
+                        coin: coin.symbol,
+                        market: marketType,
                         ...analysis
-                    });
+                    };
 
-                } catch (err) {
+                    // Open trade
+                    const opened = PaperTrader.openTrade(signal);
+                    if (opened) tradeCount++;
 
-                    console.error(
-                        coin.symbol,
-                        err
-                    );
+                    // Render signal card
+                    this.renderSignalCard(signal);
+
+                } catch(err) {
+                    console.error(coin.symbol, "error:", err);
                 }
             }
 
-            signals.sort(
-                (a, b) =>
-                    b.confidence -
-                    a.confidence
-            );
+            console.log("Scan complete.", tradeCount, "trades opened");
+            this.updateChart();
 
-            this.scannedSignals =
-                signals.slice(0, 100);
-
-            StorageManager.saveSignals(
-                this.scannedSignals
-            );
-
-            this.renderSignals();
-
-            if (
-                this.scannedSignals
-                    .length
-            ) {
-
-                this.updateAnalysisPanel(
-                    this.scannedSignals[0]
-                );
-            }
-
-            for (
-                const signal of
-                this.scannedSignals
-            ) {
-
-                const exists =
-                    PaperTrader.trades.some(
-                        trade =>
-                            trade.coin ===
-                                signal.coin &&
-                            trade.status ===
-                                "OPEN"
-                    );
-
-                if (!exists) {
-
-                    PaperTrader.openTrade(
-                        signal
-                    );
-                }
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Scan Error",
-                error
-            );
-
+        } catch(error) {
+            console.error("Scan failed:", error);
+            alert("Scan failed. Check console.");
         } finally {
-
-            const scanBtn =
-                document.getElementById(
-                    "scanBtn"
-                );
-
             if (scanBtn) {
-
-                scanBtn.disabled =
-                    false;
-
-                scanBtn.textContent =
-                    "Scan Market";
+                scanBtn.disabled = false;
+                scanBtn.textContent = "🔍 Scan Market";
             }
         }
     },
 
-    renderSignals() {
-
-        const container =
-            document.getElementById(
-                "signalContainer"
-            );
-
+    renderSignalCard(signal) {
+        const container = document.getElementById("signalContainer");
         if (!container) return;
 
-        container.innerHTML = "";
-
-        if (
-            !this.scannedSignals.length
-        ) {
-
-            container.innerHTML =
-
-                `<div class="signal-card">
-                    <h3>No High Confidence Signals</h3>
-                </div>`;
-
-            return;
+        // Clear placeholder on first signal
+        if (container.querySelector('.signal-card') && 
+            container.querySelector('.signal-card').textContent.includes('Waiting')) {
+            container.innerHTML = "";
         }
 
-        this.scannedSignals.forEach(
-            signal => {
-
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-                card.className =
-                    "signal-card";
-
-                const statusClass =
-                    signal.signal ===
-                    "BUY"
-                        ? "win"
-                        : "loss";
-
-                card.innerHTML = `
-
-                    <h3>${signal.coin}</h3>
-
-                    <p>
-                    <strong>Signal:</strong>
-                    ${signal.signal}
-                    </p>
-
-                    <p>
-                    <strong>Price:</strong>
-                    ${signal.currentPrice}
-                    </p>
-
-                    <p>
-                    <strong>Entry:</strong>
-                    ${signal.entry}
-                    </p>
-
-                    <p>
-                    <strong>TP:</strong>
-                    ${signal.takeProfit}
-                    </p>
-
-                    <p>
-                    <strong>SL:</strong>
-                    ${signal.stopLoss}
-                    </p>
-
-                    <p>
-                    <strong>RSI:</strong>
-                    ${signal.rsi}
-                    </p>
-
-                    <p>
-                    <strong>Trend:</strong>
-                    ${signal.trend}
-                    </p>
-
-                    <p>
-                    <strong>Confidence:</strong>
-                    ${signal.confidence}%
-                    </p>
-
-                    <span
-                    class="status ${statusClass}">
-                    ${signal.signal}
-                    </span>
-
-                `;
-
-                container.appendChild(
-                    card
-                );
-            }
-        );
-    },
-
-    updateAnalysisPanel(
-        signal
-    ) {
-
-        const rsi =
-            document.getElementById(
-                "rsi"
-            );
-
-        const macd =
-            document.getElementById(
-                "macd"
-            );
-
-        const trend =
-            document.getElementById(
-                "emaTrend"
-            );
-
-        const volume =
-            document.getElementById(
-                "volume"
-            );
-
-        const funding =
-            document.getElementById(
-                "fundingRate"
-            );
-
-        const openInterest =
-            document.getElementById(
-                "openInterest"
-            );
-
-        if (rsi)
-            rsi.textContent =
-                signal.rsi;
-
-        if (macd)
-            macd.textContent =
-                signal.signal;
-
-        if (trend)
-            trend.textContent =
-                signal.trend;
-
-        if (volume)
-            volume.textContent =
-                signal.volumeStrength;
-
-        if (funding)
-            funding.textContent =
-                "--";
-
-        if (openInterest)
-            openInterest.textContent =
-                "--";
+        const card = document.createElement("div");
+        card.className = "signal-card";
+        card.innerHTML = `
+            <h3>${signal.coin}</h3>
+            <p><strong>Signal:</strong> ${signal.signal}</p>
+            <p><strong>Entry:</strong> $${signal.entry}</p>
+            <p><strong>TP:</strong> $${signal.takeProfit}</p>
+            <p><strong>SL:</strong> $${signal.stopLoss}</p>
+            <p><strong>Confidence:</strong> ${signal.confidence}%</p>
+        `;
+        container.insertBefore(card, container.firstChild);
     }
-
 };
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+window.App = App;
 
+// Start
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(function() {
         App.init();
-    }
-);
+    }, 100);
+});
