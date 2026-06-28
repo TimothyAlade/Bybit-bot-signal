@@ -303,6 +303,53 @@
             text-align: center;
             padding: 20px;
         }
+       .monitor-link-card {
+    background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid #2196F3;
+    text-align: center;
+    margin: 15px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: block;
+    text-decoration: none;
+    color: #e0e0e0;
+}
+
+.monitor-link-card:hover {
+    border-color: #4CAF50;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3);
+}
+
+.monitor-link-card h3 {
+    color: #2196F3;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.monitor-link-card p {
+    color: #888;
+    font-size: 0.85em;
+    margin: 0;
+}
+
+.monitor-icon {
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
     </style>
 
     <!-- Chart.js -->
@@ -374,6 +421,13 @@
             <button id="resetBtn">🔄 Reset Account</button>
         </div>
     </section>
+    <!-- Add this after the scanner section -->
+<a href="coin-monitor.html" class="monitor-link-card">
+    <span class="monitor-icon">🔬</span>
+    <h3>📊 Live Coin Market Monitor</h3>
+    <p>Watch real-time price action, EMA crossovers, RSI, MACD & more</p>
+    <p style="color:#4CAF50;margin-top:8px;" class="pulse">▶ Click to Learn Market Movements</p>
+</a>
 
     <!-- SIGNALS -->
     <section class="signals">

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Coin Market Monitor - Top 40 Crypto</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+            padding: 15px 20px;
+            border-bottom: 2px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        header h1 {
+            font-size: 1.4em;
+            color: #4CAF50;
+        }
+
+        header p {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .back-btn {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.85em;
+            padding: 8px 15px;
+            border: 1px solid #2a2a5a;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* Coin Tabs Bar */
+        .coin-tabs-bar {
+            background: #111133;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #2a2a5a;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .coin-tab {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #1a1a3e;
+            border: 1px solid #2a2a5a;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: #888;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+
+        .coin-tab:hover {
+            border-color: #4CAF50;
+            color: #e0e0e0;
+            background: #0d0d2b;
+        }
+
+        .coin-tab.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .coin-tab .tab-change {
+            font-size: 0.75em;
+            margin-left: 5px;
+        }
+
+        .coin-tab .tab-up {
+            color: #14b814;
+        }
+
+        .coin-tab .tab-down {
+            color: #ff3b3b;
+        }
+
+        .coin-tab.active .tab-up,
+        .coin-tab.active .tab-down {
+            color: white;
+        }
+
+        /* Controls */
+        .controls-bar {
+            background: #111133;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid #2a2a5a;
+        }
+
+        select, button {
+            padding: 10px 18px;
+            background: #1a1a3e;
+            color: #e0e0e0;
+            border: 1px solid #2a2a5a;
+            border-radius: 5px;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button.danger {
+            background: #ff3b3b;
+        }
+
+        button.secondary {
+            background: #2196F3;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        /* Selected Coin Display */
+        .selected-coin-badge {
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 1em;
+            color: white;
+        }
+
+        /* Price Display */
+        .price-display {
+            background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #2a2a5a;
+            text-align: center;
+        }
+
+        .price-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .price-main {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+
+        .price-change {
+            font-size: 1.1em;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .price-up {
+            background: rgba(20, 184, 20, 0.2);
+            color: #14b814;
+        }
+
+        .price-down {
+            background: rgba(255, 59, 59, 0.2);
+            color: #ff3b3b;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            background: #111133;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #2a2a5a;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #888;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .stat-card .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .stat-card .value.red {
+            color: #ff3b3b;
+        }
+
+        /* Chart Grid */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .chart-container {
+            background: #111133;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #2a2a5a;
+            position: relative;
+            height: 350px;
+        }
+
+        .chart-container h3 {
+            color: #888;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+
+        /* Indicators Panel */
+        .indicators-panel {
+            background: #111133;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #2a2a5a;
+            margin-bottom: 10px;
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        .indicator-card {
+            background: #1a1a3e;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .indicator-card h4 {
+            color: #888;
+            font-size: 0.75em;
+            margin-bottom: 6px;
+        }
+
+        .indicator-card .indicator-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .indicator-card .indicator-signal {
+            font-size: 0.8em;
+            margin-top: 4px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .signal-bullish {
+            background: rgba(20, 184, 20, 0.2);
+            color: #14b814;
+        }
+
+        .signal-bearish {
+            background: rgba(255, 59, 59, 0.2);
+            color: #ff3b3b;
+        }
+
+        .signal-neutral {
+            background: rgba(245, 166, 35, 0.2);
+            color: #f5a623;
+        }
+
+        /* Learning Section */
+        .learning-section {
+            background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .learning-section h3 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .lesson-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .lesson-card {
+            background: #111133;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .lesson-card h4 {
+            color: #4CAF50;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+        }
+
+        .lesson-card p {
+            color: #aaa;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+
+        /* Alert Box */
+        .alert-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #111133;
+            border: 2px solid #f5a623;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            max-width: 350px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-box.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.8em;
+        }
+
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .price-main {
+                font-size: 1.8em;
+            }
+            
+            .coin-tab {
+                font-size: 0.7em;
+                padding: 6px 10px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a3e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 3px;
+        }
+    </style>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <h1>🔬 Live Coin Market Monitor</h1>
+            <p>Top 40 Cryptocurrencies | Real-Time Analysis</p>
+        </div>
+        <a href="index.html" class="back-btn">← Back to Dashboard</a>
+    </header>
+
+    <div class="container">
+
+        <!-- Coin Selection Tabs -->
+        <div class="coin-tabs-bar" id="coinTabs">
+            <!-- Populated by JavaScript -->
+            <span style="color:#888;padding:10px;">Loading top 40 coins...</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-bar">
+            <span class="selected-coin-badge" id="selectedCoinBadge">BTCUSDT</span>
+            
+            <select id="timeframeSelect">
+                <option value="1">1 Minute</option>
+                <option value="5">5 Minutes</option>
+                <option value="15" selected>15 Minutes</option>
+                <option value="60">1 Hour</option>
+                <option value="240">4 Hours</option>
+            </select>
+
+            <button id="startBtn">▶ Start Monitoring</button>
+            <button id="stopBtn" class="danger" disabled>⏹ Stop</button>
+            <button id="refreshBtn" class="secondary">🔄 Refresh Now</button>
+        </div>
+
+        <!-- Price Display -->
+        <div class="price-display">
+            <div class="price-header">
+                <h2 id="coinTitle">BTC/USDT</h2>
+            </div>
+            <div class="price-main" id="currentPrice">$0.00</div>
+            <div id="priceChangeContainer">
+                <span class="price-change" id="changePercent">0.00%</span>
+            </div>
+            <p style="color:#888;margin-top:8px;font-size:0.8em;" id="updateTime">Last updated: --</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <h4>24h High</h4>
+                <div class="value" id="high24h">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h4>24h Low</h4>
+                <div class="value red" id="low24h">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h4>24h Volume</h4>
+                <div class="value" id="volume24h">$0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Spread</h4>
+                <div class="value" id="spread">0.00%</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>📈 Price Action & EMA Crossover (EMA 9/21/50)</h3>
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>📊 RSI (14) & Volume Profile</h3>
+                <canvas id="indicatorChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Technical Indicators -->
+        <div class="indicators-panel">
+            <h3 style="color:#4CAF50;margin-bottom:12px;">🔍 Real-Time Technical Indicators</h3>
+            <div class="indicators-grid">
+                <div class="indicator-card">
+                    <h4>RSI (14)</h4>
+                    <div class="indicator-value" id="rsiValue">--</div>
+                    <div class="indicator-signal" id="rsiSignal">--</div>
+                </div>
+                <div class="indicator-card">
+                    <h4>MACD</h4>
+                    <div class="indicator-value" id="macdValue">--</div>
+                    <div class="indicator-signal" id="macdSignal">--</div>
+                </div>
+                <div class="indicator-card">
+                    <h4>EMA Trend</h4>
+                    <div class="indicator-value" id="emaTrendValue">--</div>
+                    <div class="indicator-signal" id="emaSignal">--</div>
+                </div>
+                <div class="indicator-card">
+                    <h4>Support/Resistance</h4>
+                    <div class="indicator-value" id="srValue">--</div>
+                    <div class="indicator-signal" id="srSignal">--</div>
+                </div>
+                <div class="indicator-card">
+                    <h4>Volatility (ATR)</h4>
+                    <div class="indicator-value" id="atrValue">--</div>
+                    <div class="indicator-signal" id="atrSignal">--</div>
+                </div>
+                <div class="indicator-card">
+                    <h4>Market Regime</h4>
+                    <div class="indicator-value" id="regimeValue">--</div>
+                    <div class="indicator-signal" id="regimeSignal">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Section -->
+        <div class="learning-section">
+            <h3>📚 Learn to Read Market Movements</h3>
+            <div class="lesson-grid">
+                <div class="lesson-card">
+                    <h4>🎯 Price Action</h4>
+                    <p>Watch how candles form. Green = buyers control. Red = sellers control. Long candles = strong momentum.</p>
+                </div>
+                <div class="lesson-card">
+                    <h4>📈 EMA Crossover</h4>
+                    <p>Blue (9) crosses above Orange (21) = Bullish signal. Below = Bearish. Watch these crossovers for trade entries.</p>
+                </div>
+                <div class="lesson-card">
+                    <h4>📊 RSI Analysis</h4>
+                    <p>Above 70 = Overbought (might fall). Below 30 = Oversold (might rise). 40-60 is healthy range.</p>
+                </div>
+                <div class="lesson-card">
+                    <h4>📉 Support/Resistance</h4>
+                    <p>Support = price floor. Resistance = price ceiling. Breaks of these levels signal strong moves.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Alert Box -->
+    <div class="alert-box" id="alertBox"></div>
+
+    <!-- Footer -->
+    <footer>
+        <p>📊 Live Coin Monitor | Top 40 Cryptocurrencies | Real-Time Data from Bybit API</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="coin-monitor.js"></script>
+
+</body>
+</html>
